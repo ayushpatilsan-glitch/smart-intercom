@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Smart Intercom</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #f8fafc; text-align: center; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: #1e293b; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155; }
+        h1 { color: #38bdf8; }
+        .section { margin-bottom: 25px; padding: 20px; background: #334155; border-radius: 12px; }
+        select, input[type="text"] { width: 85%; padding: 12px; border-radius: 8px; border: none; margin-bottom: 10px; font-size: 16px; }
+        button { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 5px; }
+        .btn-send { background: #0ea5e9; color: white; }
+        .btn-audio { background: #10b981; color: white; }
+        .btn-transcribe { background: #f59e0b; color: white; }
+        #transcriptionBox { margin-top: 15px; padding: 15px; background: #1e293b; border-radius: 8px; border-left: 4px solid #f59e0b; color: #fbbf24; min-height: 40px; }
+        audio { width: 100%; margin: 15px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Smart Intercom</h1>
+
+    <div class="section">
+        <h3>Send Text to ESP32 LCD</h3>
+        <input type="text" id="textMsg" placeholder="Type message to scroll on LCD...">
+        <button class="btn-send" onclick="sendText()">Display on LCD</button>
+    </div>
+
+    <div class="section">
+        <h3>Voices from ESP32</h3>
+        <label>Select Language: </label>
+        <select id="langSelect">
+            <option value="en-IN">English (India)</option>
+            <option value="hi-IN">Hindi (हिन्दी)</option>
+            <option value="mr-IN">Marathi (मराठी)</option>
+        </select>
+        <audio id="audioPlayer" controls></audio>
+        <br>
+        <button class="btn-audio" onclick="refreshAudio()">Refresh/Play</button>
+        <button class="btn-transcribe" onclick="convertToText()">Convert to Text</button>
+        <div id="transcriptionBox">Transcription results will appear here...</div>
+    </div>
+</div>
+
+<script>
+    function sendText() {
+        const val = document.getElementById("textMsg").value;
+        if(!val) return;
+        fetch('/send_text', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({text: val})
+        }).then(res => {
+            if(res.ok) { alert("Sent! Check ESP32 LCD."); document.getElementById("textMsg").value = ""; }
+        });
+    }
+
+    function refreshAudio() {
+        const player = document.getElementById("audioPlayer");
+        player.src = "/get_portable_voice?t=" + new Date().getTime();
+        player.play();
+    }
+
+    function convertToText() {
+        const box = document.getElementById("transcriptionBox");
+        const lang = document.getElementById("langSelect").value;
+        box.innerText = "Transcribing in " + lang + "...";
+        
+        fetch('/transcribe_voice?lang=' + lang)
+            .then(res => res.json())
+            .then(data => { box.innerText = "Recognized: " + data.text; })
+            .catch(err => { box.innerText = "Error: Server connection failed."; });
+    }
+</script>
+</body>
+</html>
