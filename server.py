@@ -6,8 +6,8 @@ from functools import wraps
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
-USER_ID = "admin"        # Your desired ID
-USER_PASSWORD = "123"    # Your desired Password
+USER_ID = "admin"        
+USER_PASSWORD = "123"    
 UPLOAD_DIR = "uploads"
 ESP_AUDIO = os.path.join(UPLOAD_DIR, "audio.wav")
 MSG_FILE = "message.txt"
@@ -36,13 +36,12 @@ def requires_auth(f):
 # --- ROUTES ---
 
 @app.route('/')
-@requires_auth  # This protects the website
+@requires_auth  
 def index(): 
     return render_template('index.html')
 
 @app.route('/portable_voice', methods=['POST'])
 def receive_esp():
-    # ESP32 doesn't need login if it uses the direct local IP or a secret token
     with open(ESP_AUDIO, "wb") as f: f.write(request.data)
     return "OK", 200
 
@@ -81,15 +80,9 @@ def esp_check():
         return content, 200
     return "NO_MESSAGE", 200
 
-import os
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
-
-# ... (rest of your code) ...
-
-if __name__ == "__main__":
-    # Get port from environment variable, default to 5000 for local testing
+# --- FIX FOR RENDER ---
+if __name__ == '__main__':
+    # Get port from Render's environment, default to 5000 locally
     port = int(os.environ.get("PORT", 5000))
-    # Must bind to 0.0.0.0 to be accessible on Render
+    # host='0.0.0.0' is required for cloud access
     app.run(host='0.0.0.0', port=port)
