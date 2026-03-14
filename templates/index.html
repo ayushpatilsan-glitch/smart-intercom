@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESP32 Speech Link</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    :root {
+      --bg-main: #ffffff;
+      --bg-container: #f6f8fa;
+      --bg-card: #ffffff;
+      --proj-name: #2da44e;
+      --proj-desc: #24292f;
+      --border-primary: #d0d7de;
+      --transcript: #2ea043;
+      --text-primary: #24292f;
+      --text-secondary: #57606a;
+      --team: #2ea043;
+      --input-bg: #ffffff;
+      --input-border: #d0d7de;
+      --input-focus: #0969da;
+      --btn-primary-bg: #2da44e;
+      --btn-primary-hover: #2c974b;
+      --btn-primary-text: #ffffff;
+      --icon-primary: #57606a;
+      --icon-accent: #0969da;
+      --icon-logo: #57606a;
+      --hover-bg: #f3f4f6;
+      --card-shadow: 0 1px 0 rgba(0, 0, 0, 0.04),
+        0 1px 4px rgba(27, 31, 36, 0.12);
+    }
+
+    body.dark {
+      --bg-main: #0d1117;
+      --bg-container: #161b22;
+      --bg-card: #161b22;
+      --proj-desc: #58a6ff;
+      --proj-name: #fbbf24;
+      --border-primary: #30363d;
+      --team: #fbbf24;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --input-bg: #0d1117;
+      --input-border: #30363d;
+      --input-focus: #58a6ff;
+      --transcript: #58a6ff;
+      --btn-primary-bg: #238636;
+      --btn-primary-hover: #2ea043;
+      --btn-primary-text: #ffffff;
+      --icon-primary: #2ea043;
+      --icon-accent: #58a6ff;
+      --icon-logo: #57606a;
+      --hover-bg: #21262d;
+      --card-shadow: 0 0 0 1px rgba(237, 244, 252, 0.1),
+        0 8px 24px rgba(22, 22, 22, 0.4);
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg-main);
+      color: var(--text-primary);
+      text-align: center;
+    }
+
+    .main-container {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 10px;
+      height: 740px;
+    }
+
+    .act_container {
+      flex: 1;
+      margin: 20px 20px;
+      background: var(--bg-container);
+      padding: 30px;
+      padding-top: 10px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--border-primary);
+    }
+
+    .doc-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin: 20px 20px;
+      background: var(--bg-container);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--border-primary);
+    }
+
+    .title {
+      font-size: 1.3rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .proj_name {
+      font-size: 30px;
+      padding: 10px;
+      font-weight: bold;
+      color: var(--proj-name);
+    }
+
+    .proj_desc {
+      font-size: 15px;
+      color: var(--proj-desc);
+    }
+
+    #themeToggle {
+      color: var(--icon-logo);
+      background: none;
+      font-size: 30px;
+      padding: 0;
+    }
+
+    #themeToggle:active {
+      border: none;
+    }
+
+    .section {
+      margin-bottom: 25px;
+      padding: 10px;
+      background: var(--bg-card);
+      border-radius: 12px;
+      box-shadow: var(--card-shadow);
+    }
+
+    select,
+    input[type='text'] {
+      width: 85%;
+      padding: 12px;
+      font-size: 12px;
+      border: 2px solid var(--input-border);
+      border-radius: 12px;
+      margin-bottom: 10px;
+      background-color: var(--input-bg);
+      color: var(--text-primary);
+    }
+
+    input[type='text']::placeholder {
+      color: #aaa;
+    }
+
+    input[type='text']:focus {
+      outline: none;
+      border-color: var(--input-focus);
+    }
+
+    select {
+      width: 55%;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 5px;
+    }
+
+    button:active {
+      border: 2px solid var(--text-primary);
+    }
+
+    .btn-send,
+    .btn-audio,
+    .btn-transcribe {
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: rgb(0, 0, 0);
+    }
+
+    .btn-send {
+      background: var(--btn-primary-bg);
+      color: white;
+    }
+
+    .btn-audio {
+      background: linear-gradient(135deg, #00c6ff, #0072ff);
+    }
+
+    .btn-transcribe {
+      background: linear-gradient(135deg, #f7971e, #ffd200);
+    }
+
+    #transcriptionBox {
+      margin: 15px;
+      padding: 10px;
+      font-size: 0.8rem;
+      background: var(--bg-card);
+      border-radius: 8px;
+      border: 1px solid var(--text-secondary);
+      border-left: 4px solid var(--transcript);
+      border-right: 4px solid var(--transcript);
+      color: var(--text-primary);
+      min-height: 50px;
+    }
+
+    audio {
+      width: 85%;
+      margin: 10px 0;
+      height: 40px;
+      border-radius: 20px;
+    }
+
+    /*DOCUMENTATION*/
+    .card {
+      border-radius: 15px;
+      box-shadow: var(--card-shadow);
+      margin: 10px;
+      padding: 8px;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      text-align: left;
+    }
+
+    .card h2 {
+      text-align: center;
+      color: var(--icon-accent);
+      margin-bottom: 0;
+      margin-top: 0;
+      font-size: 15px;
+    }
+
+    .card p {
+      font-size: 13px;
+    }
+
+    .card ul {
+      font-size: 13px;
+      list-style: circle;
+    }
+
+    .overview {
+      grid-column: span 3;
+      text-align: justify;
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+
+    .tech {
+      padding: 13px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+    }
+
+    .tech-grid i {
+      font-size: 3rem;
+      color: var(--icon-logo);
+      padding: 0;
+    }
+
+    .team {
+      text-align: center;
+      color: var(--team);
+    }
+
+    .institute{
+      text-align: left;
+      padding-left: 1rem;
+    }
+
+    @media (max-width: 450px) {
+      .main-container {
+        display: block;
+        justify-content: center;
+      }
+
+      .act_container {
+        justify-content: center;
+      }
+
+      .title {
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-evenly;
+      }
+
+      .proj_name {
+        font-size: 15px;
+        padding: 10px;
+      }
+
+      .proj_desc {
+        font-size: 10px;
+      }
+
+      .doc-container {
+        grid-template-columns: repeat(1, 1fr);
+      }
+
+      .overview {
+        grid-column: span 1;
+      }
+    }
+
+    @media (min-width: 450px) and (max-width: 770px) {
+      .main-container {
+        display: block;
+        justify-content: center;
+      }
+
+      .act_container {
+        justify-content: center;
+      }
+
+      .doc-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .overview {
+        grid-column: span 2;
+      }
+    }
+
+    @media (min-width: 771px) and (max-width: 1030px) {
+      .main-container {
+        display: block;
+        justify-content: center;
+      }
+
+      .act_container {
+        justify-content: center;
+      }
+
+      .doc-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .overview {
+        grid-column: span 2;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="main-container">
+    <!--Container 1-->
+    <div class="act_container">
+      <div class="title">
+        <div class="proj_name">Speech Link</div>
+        <div class="proj_desc">
+          Real Time Speech Processing System<br />For Hearing & Speech
+          Impaired
+        </div>
+        <button id="themeToggle">
+          <i class="fa-solid fa-circle-half-stroke"></i>
+        </button>
+      </div>
+
+      <div class="section">
+        <h3 class="send_text">Send Text to ESP32 LCD</h3>
+        <input type="text" id="textMsg" placeholder="Type message to scroll on LCD..." />
+        <button class="btn-send" onclick="sendText()">Display on LCD</button>
+      </div>
+
+      <div class="section">
+        <h3 class="voices_from">Voices from ESP32</h3>
+        <label class="sel-lang">Select Language: </label>
+        <select id="langSelect">
+          <option value="en-IN">English (India)</option>
+          <option value="hi-IN">Hindi (हिन्दी)</option>
+          <option value="mr-IN">Marathi (मराठी)</option>
+        </select>
+        <audio id="audioPlayer" controls></audio>
+        <br />
+        <button class="btn-audio" onclick="refreshAudio()">
+          Refresh/Play
+        </button>
+        <button class="btn-transcribe" onclick="convertToText()">
+          Convert to Text
+        </button>
+        <div id="transcriptionBox">
+          Transcription results will appear here...
+        </div>
+      </div>
+    </div>
+
+    <!--container 2-->
+    <div class="doc-container">
+      <div class="card overview">
+        <h2>Project Overview</h2>
+        <p>
+          Speech Link is a wireless system that bridges the gap between speech and text by providing real-time speech-to-text and text-to-speech conversion. Powered by an ESP32, it enables remote communication over a wireless network, making interaction easier and more accessible.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>System Architecture</h2>
+        <ul>
+          <li>Browser-based frontend</li>
+          <li>Speech recognition layer</li>
+          <li>Python backend on Raspberry Pi</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Objectives</h2>
+        <ul>
+          <li>Accessibility</li>
+          <li>Low cost</li>
+          <li>Real-time response</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Technology Stack</h2>
+
+        <div class="tech-grid">
+          <div class="tech"><i class="fa-brands fa-html5"></i></div>
+          <div class="tech"><i class="fa-brands fa-css3-alt"></i></div>
+          <div class="tech"><i class="fa-brands fa-js"></i></div>
+          <div class="tech"><i class="fa-brands fa-python"></i></div>
+          <div class="tech"><i class="fa-solid fa-microchip"></i></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Hardware</h2>
+        <ul>
+          <li>Raspberry Pi</li>
+          <li>Microphone</li>
+          <li>Speaker</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Team Members</h2>
+        <h4 class="team">The Silicon Squad</h4>
+        <ul>
+          <li>Pratik Adamuthe</li>
+          <li>Ayush Patil</li>
+          <li>Rutuj Maindargi</li>
+        </ul>
+      </div>
+
+      <div class="card institute">
+        <h2>Institute / Department</h2>
+        <p>
+          Department of Electronics and Telecommunication<br /><br />
+          Latthe Education Society's<br />
+          Polytechnic Sangli<br />
+          Maharashtra, India
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!---->
+  <script>
+    function sendText() {
+      const val = document.getElementById('textMsg').value
+      if (!val) return
+      fetch('/send_text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: val })
+      }).then(res => {
+        if (res.ok) {
+          alert('Sent! Check ESP32 LCD.')
+          document.getElementById('textMsg').value = ''
+        }
+      })
+    }
+
+    function refreshAudio() {
+      const player = document.getElementById('audioPlayer')
+      player.src = '/get_portable_voice?t=' + new Date().getTime()
+      player.play()
+    }
+
+    function convertToText() {
+      const box = document.getElementById('transcriptionBox')
+      const lang = document.getElementById('langSelect').value
+      box.innerText = 'Transcribing in ' + lang + '...'
+
+      fetch('/transcribe_voice?lang=' + lang)
+        .then(res => res.json())
+        .then(data => {
+          box.innerText = 'Recognized: ' + data.text
+        })
+        .catch(err => {
+          box.innerText = 'Error: Server connection failed.'
+        })
+    }
+
+    const toggleBtn = document.getElementById('themeToggle')
+
+    toggleBtn.addEventListener('click', () => {
+      document.body.classList.toggle('dark')
+
+      if (document.body.classList.contains('dark')) {
+        localStorage.setItem('theme', 'dark')
+      } else {
+        localStorage.setItem('theme', 'light')
+      }
+    })
+
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark')
+    }
+  </script>
+</body>
+
+</html>
