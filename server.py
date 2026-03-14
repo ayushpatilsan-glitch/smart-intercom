@@ -6,8 +6,8 @@ from functools import wraps
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
-USER_ID = "admin"        
-USER_PASSWORD = "123"    
+USER_ID = "Real Time Speech Converter"        
+USER_PASSWORD = "321"    
 UPLOAD_DIR = "uploads"
 ESP_AUDIO = os.path.join(UPLOAD_DIR, "audio.wav")
 MSG_FILE = "message.txt"
