@@ -11,16 +11,18 @@ USER_PASSWORD = "321"
 UPLOAD_DIR = "uploads"
 ESP_AUDIO = os.path.join(UPLOAD_DIR, "audio.wav")
 MSG_FILE = "message.txt"
+NEW_AUDIO_AVAILABLE = False  # Global flag for the popup system
 
-if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
+if not os.path.exists(UPLOAD_DIR): 
+    os.makedirs(UPLOAD_DIR)
 
-# --- SECURITY FUNCTION ---
+# --- SECURITY ---
 def check_auth(username, password):
     return username == USER_ID and password == USER_PASSWORD
 
 def authenticate():
     return Response(
-    'Could not verify your login level for that URL.\n'
+    'Could not verify your login level.\n'
     'You have to login with proper credentials', 401,
     {'WWW-Authenticate': 'Basic realm="Login Required"'})
 
@@ -42,8 +44,20 @@ def index():
 
 @app.route('/portable_voice', methods=['POST'])
 def receive_esp():
-    with open(ESP_AUDIO, "wb") as f: f.write(request.data)
+    global NEW_AUDIO_AVAILABLE
+    with open(ESP_AUDIO, "wb") as f: 
+        f.write(request.data)
+    NEW_AUDIO_AVAILABLE = True # Trigger for the frontend popup
     return "OK", 200
+
+@app.route('/check_new_audio')
+@requires_auth
+def check_audio():
+    global NEW_AUDIO_AVAILABLE
+    if NEW_AUDIO_AVAILABLE:
+        NEW_AUDIO_AVAILABLE = False # Reset flag after reporting
+        return jsonify({"new": True})
+    return jsonify({"new": False})
 
 @app.route('/get_portable_voice')
 @requires_auth
@@ -53,7 +67,7 @@ def send_to_web():
 @app.route('/transcribe_voice')
 @requires_auth
 def transcribe():
-    if not os.path.exists(ESP_AUDIO): return jsonify({"text": "No file."})
+    if not os.path.exists(ESP_AUDIO): return jsonify({"text": "No file found."})
     lang = request.args.get('lang', 'en-IN')
     r = sr.Recognizer()
     try:
@@ -69,20 +83,21 @@ def transcribe():
 @requires_auth
 def save_text():
     message = request.json['text'].strip() 
-    with open(MSG_FILE, "w", encoding='utf-8') as f: f.write(message)
+    with open(MSG_FILE, "w", encoding='utf-8') as f: 
+        f.write(message)
     return "OK", 200
 
 @app.route('/get_text')
 def esp_check():
     if os.path.exists(MSG_FILE):
-        with open(MSG_FILE, "r", encoding='utf-8') as f: content = f.read()
-        os.remove(MSG_FILE)
-        return content, 200
+        try:
+            with open(MSG_FILE, "r", encoding='utf-8') as f: 
+                content = f.read()
+            os.remove(MSG_FILE) # ESP32 consumes the message
+            return content, 200
+        except: pass
     return "NO_MESSAGE", 200
 
-# --- FIX FOR RENDER ---
 if __name__ == '__main__':
-    # Get port from Render's environment, default to 5000 locally
     port = int(os.environ.get("PORT", 5000))
-    # host='0.0.0.0' is required for cloud access
     app.run(host='0.0.0.0', port=port)
